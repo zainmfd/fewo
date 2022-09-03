@@ -112,3 +112,23 @@ void loop() {
 ```
 
 ![image](https://user-images.githubusercontent.com/30889567/188283664-5a6a692f-45f6-43f6-9b10-9bac514c7fb4.png)
+
+
+Code for soil moisture sensor
+
+```int sensorPin = A0;
+int sensorValue = 0;
+ 
+void setup() {
+    Serial.begin(9600);
+}
+void loop() {
+    // read the value from the sensor:
+    sensorValue = analogRead(sensorPin);
+    Serial.print("Moisture = " );
+    Serial.println(sensorValue);
+    delay(1000);
+}
+```
+![image](https://user-images.githubusercontent.com/30889567/188284115-cbceb47a-3ad1-488d-8a67-9e9ec11bd983.png)
+
