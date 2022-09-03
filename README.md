@@ -49,7 +49,7 @@ void loop() {
     }
     delay(1000);
 }
-
+```
 
 
 Code for Grove Temp&Hum using sht40 and this is also copied from seeedstudio official doc
@@ -108,6 +108,6 @@ void loop() {
     }
 }
 
-
+```
 
 ![image](https://user-images.githubusercontent.com/30889567/188283664-5a6a692f-45f6-43f6-9b10-9bac514c7fb4.png)
