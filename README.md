@@ -133,3 +133,130 @@ void loop() {
 ```
 ![image](https://user-images.githubusercontent.com/30889567/188284115-cbceb47a-3ad1-488d-8a67-9e9ec11bd983.png)
 
+
+Code for data collection in edge impulse
+``` #include <Wire.h>
+
+#include <SensirionI2CSht4x.h>
+#include "sensirion_common.h"
+#include "sgp30.h"
+
+// Settings
+#define BTN_START           0                         // 1: press button to start, 0: loop
+#define BTN_PIN             WIO_5S_PRESS              // Pin that button is connected to
+#define SAMPLING_FREQ_HZ    4                         // Sampling frequency (Hz)
+#define SAMPLING_PERIOD_MS  1000 / SAMPLING_FREQ_HZ   // Sampling period (ms)
+#define NUM_SAMPLES         8                         // 8 samples at 4 Hz is 2 seconds
+
+int sensorPin = A0;
+int sensorValue = 0;
+
+SensirionI2CSht4x sht4x;
+
+void setup() {
+  // Initialize button
+  pinMode(BTN_PIN, INPUT_PULLUP);
+  
+  // Start serial
+  Serial.begin(115200);
+
+  // Initialize environmental sensor
+ while (!Serial) {
+        delay(100);
+    }
+    Wire.begin();
+
+    uint16_t error;
+    char errorMessage[256];
+    sht4x.begin(Wire);
+    uint32_t serialNumber;
+    error = sht4x.serialNumber(serialNumber);
+    if (error) {
+        Serial.print("Error trying to execute serialNumber(): ");
+        errorToString(error, errorMessage, 256);
+        Serial.println(errorMessage);
+    } 
+
+  // Initialize VOC and eCO2 sensor
+  while (sgp_probe() != STATUS_OK) {
+    Serial.println("Trying to initialize SGP30...");
+    delay(1000);
+  }
+
+  
+}
+
+void loop() {
+
+
+  uint16_t error;
+  int16_t sgp_err;
+  uint16_t sgp_tvoc;
+  uint16_t sgp_co2;
+  unsigned long timestamp;
+  char errorMessage[256];
+
+    float temperature;
+    float humidity;
+    error = sht4x.measureHighPrecision(temperature, humidity);
+
+sensorValue = analogRead(sensorPin);
+
+  // Wait for button press
+#if BTN_START
+  while (digitalRead(BTN_PIN) == 1);
+#endif
+
+  // Print header
+  Serial.println("timestamp,temp,humd,co2,voc1,soilmst");
+
+  // Transmit samples over serial port
+  for (int i = 0; i < NUM_SAMPLES; i++) {
+
+    // Take timestamp so we can hit our target frequency
+    timestamp = millis();
+
+  
+    // Read BME680 environmental sensor
+   if (error) {
+        Serial.print("Error trying to execute measureHighPrecision(): ");
+        errorToString(error, errorMessage, 256);
+        Serial.println(errorMessage);
+    }
+  
+    // Read SGP30 sensor
+    sgp_err = sgp_measure_iaq_blocking_read(&sgp_tvoc, &sgp_co2);
+    if (sgp_err != STATUS_OK) {
+      Serial.println("Error: Could not read from SGP30");
+      return;
+    }
+
+    // Print CSV data with timestamp
+    Serial.print(timestamp);
+    Serial.print(",");
+    Serial.print(temperature);
+    Serial.print(",");
+    Serial.print(humidity);
+    Serial.print(",");
+    Serial.print(sgp_co2);
+    Serial.print(",");
+    Serial.print(sgp_tvoc);
+    Serial.print(",");
+    Serial.print(sensorValue);
+    Serial.println();
+
+    // Wait just long enough for our sampling period
+    while (millis() < timestamp + SAMPLING_PERIOD_MS);
+  }
+
+  // Print empty line to transmit termination of recording
+    Serial.println();
+
+  // Make sure the button has been released for a few milliseconds
+#if BTN_START
+  while (digitalRead(BTN_PIN) == 0);
+  delay(100);
+#endif
+}
+```
+
